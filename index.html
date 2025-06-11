@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Exercise Dataset Viewer</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap");
+
+      :root {
+        --color-bg: #ffffff;
+        --color-text: #374151;
+        --color-muted: #6b7280;
+        --color-border: #e5e7eb;
+        --color-shadow: rgba(0, 0, 0, 0.05);
+        --radius: 0.75rem;
+      }
+      body {
+        margin: 0;
+        font-family: "Poppins", sans-serif;
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        line-height: 1.6;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem 1rem;
+        font-size: 0.85rem;
+      }
+      header {
+        width: 100%;
+        max-width: 1200px;
+        margin-bottom: 2rem;
+        position: sticky;
+        top: 0;
+        background: var(--color-bg);
+        backdrop-filter: saturate(180%) blur(10px);
+        box-shadow: 0 1px 4px var(--color-shadow);
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 10;
+      }
+      header h1 {
+        font-weight: 700;
+        font-size: 2rem;
+        color: #111827;
+      }
+      main {
+        max-width: 1200px;
+        width: 100%;
+      }
+      label {
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--color-muted);
+        display: block;
+        margin-bottom: 0.25rem;
+      }
+      input[type="file"],
+      select {
+        padding: 0.4rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--color-border);
+        font-size: 0.85rem;
+        margin-right: 0.5rem;
+      }
+      input[type="file"]:hover {
+        border-color: #2563eb;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 2rem;
+        font-size: 0.85rem;
+        color: var(--color-text);
+      }
+      thead {
+        background: #f9fafb;
+      }
+      th,
+      td {
+        border: 1px solid var(--color-border);
+        padding: 0.5rem 0.75rem;
+        text-align: left;
+        vertical-align: middle;
+      }
+      th {
+        font-weight: 700;
+        color: #111827;
+        position: sticky;
+        top: 0;
+        background: #f9fafb;
+        z-index: 5;
+      }
+      tbody tr:hover {
+        background-color: #f3f4f6;
+      }
+      img {
+        max-height: 48px;
+        max-width: 80px;
+        border-radius: 0.375rem;
+        object-fit: contain;
+      }
+      .container {
+        overflow-x: auto;
+        border-radius: var(--radius);
+        box-shadow: 0 2px 10px var(--color-shadow);
+        background: var(--color-bg);
+      }
+      button {
+        padding: 0.5rem 1rem;
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      button:hover {
+        background-color: #1d4ed8;
+      }
+      @media (max-width: 768px) {
+        th,
+        td {
+          font-size: 0.75rem;
+          padding: 0.4rem 0.6rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Datase Fitness by. ridwanafazn</h1>
+    </header>
+    <main>
+      <!-- FILTER SECTION -->
+      <div
+        style="
+          margin-top: 1rem;
+          margin-bottom: 1rem;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+        "
+      >
+        <div>
+          <label for="filter1">Filter By:</label>
+          <select id="filter1">
+            <option value="">-- Select --</option>
+            <option value="body_part">Body Part</option>
+            <option value="equipment">Equipment</option>
+          </select>
+        </div>
+        <div>
+          <label for="filter2">Value:</label>
+          <select id="filter2" disabled>
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+        <div style="align-self: flex-end">
+          <button id="resetFilter">Reset Filter</button>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div
+        class="container"
+        id="table-container"
+        tabindex="0"
+        aria-label="Exercise dataset table"
+        role="region"
+      ></div>
+    </main>
+
+    <script>
+      function parseCSV(text) {
+        const lines = text.trim().split("\n");
+        const headers = lines[0].split(",");
+        return lines.slice(1).map((line) => {
+          const fields = [];
+          let field = "",
+            quoted = false;
+          for (let i = 0; i < line.length; i++) {
+            const c = line[i];
+            if (c === '"' && line[i - 1] !== "\\") {
+              quoted = !quoted;
+              continue;
+            }
+            if (c === "," && !quoted) {
+              fields.push(field);
+              field = "";
+            } else {
+              field += c;
+            }
+          }
+          fields.push(field);
+          const obj = {};
+          headers.forEach((header, idx) => {
+            obj[header.trim()] = (fields[idx] || "").trim();
+          });
+          return obj;
+        });
+      }
+
+      function createImageCell(src) {
+        const td = document.createElement("td");
+        if (src) {
+          const img = document.createElement("img");
+          img.src = src;
+          img.alt = "Exercise image";
+          img.loading = "lazy";
+          td.appendChild(img);
+        } else {
+          td.textContent = "No image";
+        }
+        return td;
+      }
+
+      const tableContainer = document.getElementById("table-container");
+      const filter1 = document.getElementById("filter1");
+      const filter2 = document.getElementById("filter2");
+      const resetFilter = document.getElementById("resetFilter");
+
+      let fullData = [];
+      let currentPage = 1;
+      const rowsPerPage = 100;
+
+      async function loadCSVFromFile() {
+        try {
+          const response = await fetch("dataset_fitness_4.csv");
+          const text = await response.text();
+          fullData = parseCSV(text);
+          renderPaginatedTable(fullData);
+        } catch (err) {
+          tableContainer.innerHTML =
+            '<p style="color:red;">Gagal memuat file dataset_fitness_4.csv.</p>';
+        }
+      }
+
+      function formatPipedText(text) {
+        return text.includes("|")
+          ? text
+              .split("|")
+              .map((s) => s.trim())
+              .join(", ")
+          : text;
+      }
+
+      filter1.addEventListener("change", () => {
+        const selectedField = filter1.value;
+        filter2.innerHTML = '<option value="">-- Select --</option>';
+        if (!selectedField || !fullData.length) {
+          filter2.disabled = true;
+          return;
+        }
+
+        const values = [
+          ...new Set(
+            fullData.map((item) => item[selectedField]).filter(Boolean)
+          ),
+        ].sort();
+        values.forEach((val) => {
+          const option = document.createElement("option");
+          option.value = val;
+          option.textContent = formatPipedText(val);
+          filter2.appendChild(option);
+        });
+        filter2.disabled = false;
+      });
+
+      filter2.addEventListener("change", () => {
+        const key = filter1.value;
+        const value = filter2.value;
+        if (!key || !value) return renderPaginatedTable(fullData);
+        const filtered = fullData.filter((item) => item[key] === value);
+        const sortKey = key === "body_part" ? "equipment" : "body_part";
+        filtered.sort((a, b) =>
+          (a[sortKey] || "").localeCompare(b[sortKey] || "")
+        );
+        currentPage = 1;
+        renderPaginatedTable(filtered);
+      });
+
+      resetFilter.addEventListener("click", () => {
+        filter1.value = "";
+        filter2.innerHTML = '<option value="">-- Select --</option>';
+        filter2.disabled = true;
+        currentPage = 1;
+        renderPaginatedTable(fullData);
+      });
+
+      function renderPaginatedTable(data) {
+        const totalPages = Math.ceil(data.length / rowsPerPage);
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const paginated = data.slice(start, end);
+
+        const table = document.createElement("table");
+        const thead = document.createElement("thead");
+        const tbody = document.createElement("tbody");
+
+        const columns = Object.keys(data[0]);
+        const preferredOrder = [
+          "exercise_id",
+          "exercise_name",
+          "equipment",
+          "body_part",
+          "movement_type",
+          "exercise_image",
+          "exercise_type",
+          "primary_muscle",
+          "secondary_muscle",
+          "grip_type",
+        ];
+        const finalColumns = ["#"].concat(
+          preferredOrder
+            .filter((col) => columns.includes(col))
+            .concat(columns.filter((c) => !preferredOrder.includes(c)))
+        );
+
+        const trHead = document.createElement("tr");
+        finalColumns.forEach((col) => {
+          const th = document.createElement("th");
+          th.textContent =
+            col === "#"
+              ? "#"
+              : col.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+          trHead.appendChild(th);
+        });
+        thead.appendChild(trHead);
+
+        paginated.forEach((row, index) => {
+          const tr = document.createElement("tr");
+          const numberCell = document.createElement("td");
+          numberCell.textContent = start + index + 1;
+          tr.appendChild(numberCell);
+
+          finalColumns.slice(1).forEach((col) => {
+            if (col === "exercise_image") {
+              tr.appendChild(createImageCell(row[col]));
+            } else {
+              const td = document.createElement("td");
+              td.textContent = formatPipedText(row[col] || "");
+              tr.appendChild(td);
+            }
+          });
+
+          tbody.appendChild(tr);
+        });
+
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        tableContainer.innerHTML = "";
+        tableContainer.appendChild(table);
+
+        const nav = document.createElement("div");
+        nav.style.marginTop = "1rem";
+        nav.style.display = "flex";
+        nav.style.flexWrap = "wrap";
+        nav.style.gap = "0.5rem";
+        nav.style.justifyContent = "center";
+
+        for (let i = 1; i <= totalPages; i++) {
+          const btn = document.createElement("button");
+          btn.textContent = i;
+          if (i === currentPage) {
+            btn.style.backgroundColor = "#1d4ed8";
+          }
+          btn.onclick = () => {
+            currentPage = i;
+            renderPaginatedTable(data);
+          };
+          nav.appendChild(btn);
+        }
+
+        tableContainer.appendChild(nav);
+      }
+
+      // langsung load CSV saat halaman dibuka
+      window.onload = loadCSVFromFile;
+    </script>
+  </body>
+</html>
