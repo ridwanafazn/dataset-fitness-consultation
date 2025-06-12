@@ -230,13 +230,13 @@
 
       async function loadCSVFromFile() {
         try {
-          const response = await fetch("dataset_fitness_4.csv");
+          const response = await fetch("dataset_fitness_5.csv");
           const text = await response.text();
           fullData = parseCSV(text);
           renderPaginatedTable(fullData);
         } catch (err) {
           tableContainer.innerHTML =
-            '<p style="color:red;">Gagal memuat file dataset_fitness_4.csv.</p>';
+            '<p style="color:red;">Gagal memuat file dataset_fitness_5.csv.</p>';
         }
       }
 
